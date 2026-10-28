@@ -165,14 +165,20 @@ main {
     padding: var(--padding-sm) var(--padding-md);
     border: none;
     border-radius: var(--border-radius-xxl);
+    font-weight: 700;
     cursor: pointer;
-    transition: all ease .5s, scale ease-out .3s;
+    transition: all ease .5s;
 }
 
 .start-btn:hover {
     border-radius: var(--border-radius-sm);
+    scale: 1.1;
 }
 
-.start-btn:active {
-    scale: 1.1;
+.food {
+    background-color: var(--food-color);
+}
+
+.fill {
+    background-color: var(--snake-color);
 }
