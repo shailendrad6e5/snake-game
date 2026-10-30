@@ -13,19 +13,13 @@ const rows = Math.floor(board.clientHeight / cellSize);
 const cols = Math.floor(board.clientWidth / cellSize);
 const blocks = [];
 const allowedKeys = ["ArrowRight", "ArrowLeft", "ArrowUp", "ArrowDown"];
+let foodx, foody;
+let intervalId = undefined;
+let checkGameOver = false;
 let scorevalue = 0;
 let direction = "ArrowDown";
 let food = null;
-let snake = [
-  {
-    x: 1,
-    y: 3,
-  },
-  {
-    x: 1,
-    y: 2,
-  },
-];
+let snake = null;
 
 window.addEventListener("keydown", (e) => {
   if (allowedKeys.includes(e.key)) {
@@ -49,14 +43,6 @@ for (let row = 0; row < rows; row++) {
   }
 }
 
-function hideModal() {
-  score.textContent = 0;
-  model.style.display = "none";
-  const intervalId = setInterval(() => {
-    rendor();
-  }, 400);
-}
-
 function loadFood() {
   do {
     food = {
@@ -64,7 +50,47 @@ function loadFood() {
       y: Math.floor(Math.random() * cols),
     };
     blocks[`${food.x}-${food.y}`].classList.add("food");
+    foodx = food.x;
+    foody = food.y;
   } while (snake.some((seg) => seg.x == food.x && seg.y == food.y));
+}
+
+function startGame() {
+  snake = [
+    {
+      x: 1,
+      y: 5,
+    },
+    {
+      x: 1,
+      y: 4,
+    },
+  ];
+  model.style.display = "none";
+  scorevalue = 0;
+  score.textContent = 0;
+
+  loadFood();
+  intervalId = setInterval(() => {
+    rendor();
+  }, 400);
+}
+
+function hideModal() {
+  model.style.display = "none";
+  scorevalue = 0;
+  score.textContent = 0;
+}
+
+function gameOver() {
+  clearInterval(intervalId);
+  snake.forEach((seg) => {
+    blocks[`${seg.x}-${seg.y}`].classList.remove("fill");
+    modelScore.textContent = scorevalue;
+  });
+  scorevalue = 0;
+  blocks[`${foodx}-${foody}`].classList.remove("food");
+  model.style.display = "flex";
 }
 
 function rendor() {
@@ -80,6 +106,14 @@ function rendor() {
   else if (direction == "ArrowUp") head = { x: snake[0].x - 1, y: snake[0].y };
   else if (direction == "ArrowDown")
     head = { x: snake[0].x + 1, y: snake[0].y };
+
+  if (head.x < 0 || head.y < 0) {
+    if (head.x < 0) head.x = rows - 1;
+    else head.y = cols - 1;
+  } else if (head.x >= rows || head.y >= cols) {
+    if (head.x >= rows) head.x = 0;
+    if (head.y >= cols) head.y = 0;
+  }
 
   if (head.x == food.x && head.y == food.y) {
     scorevalue++;
@@ -99,9 +133,12 @@ function rendor() {
   snake.forEach((seg) => {
     blocks[`${seg.x}-${seg.y}`].classList.add("fill");
   });
+
+  if (snake.slice(1).some((seg) => seg.x == head.x && seg.y == head.y)) {
+    gameOver();
+  }
 }
 
-startBtn.addEventListener("click", hideModal);
-startAgain.addEventListener("click", hideModal);
+startBtn.addEventListener("click", startGame);
+startAgain.addEventListener("click", startGame);
 menu.addEventListener("click", hideModal);
-loadFood();

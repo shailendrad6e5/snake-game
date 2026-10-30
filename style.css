@@ -147,6 +147,7 @@ main {
 
 .bottom .box {
     border: 1px solid var(--bg-color-3);
+    border-radius: 50%;
 }
 
 .nav-elem {
