@@ -7,22 +7,27 @@ const modelContent = document.querySelector(".model-content");
 const modelScore = document.querySelector("#score-value");
 const score = document.querySelector("#scoreValue");
 const highScore = document.querySelector("#highScoreValue");
-let highScoreValue = 0;
+const timer = document.querySelector("#Timer");
+let highScoreValue = localStorage.getItem("highScore")
+  ? parseInt(localStorage.getItem("highScore"), 10)
+  : 0;
 const cellSize = 40;
-const rows = Math.floor(board.clientHeight / cellSize);
-const cols = Math.floor(board.clientWidth / cellSize);
-const blocks = [];
+let rows = Math.floor(board.clientHeight / cellSize);
+let cols = Math.floor(board.clientWidth / cellSize);
+let blocks = [];
 const allowedKeys = ["ArrowRight", "ArrowLeft", "ArrowUp", "ArrowDown"];
-let foodx, foody;
 let intervalId = undefined;
-let checkGameOver = false;
+let timeIntervalId = undefined;
+let isGameRunning = false;
 let scorevalue = 0;
 let direction = "ArrowDown";
+let min = 0;
+let sec = 0;
 let food = null;
 let snake = null;
-
+highScore.textContent = highScoreValue;
 window.addEventListener("keydown", (e) => {
-  if (allowedKeys.includes(e.key)) {
+  if (allowedKeys.includes(e.key) && isGameRunning) {
     if (
       (direction == "ArrowRight" && e.key != "ArrowLeft") ||
       (direction == "ArrowLeft" && e.key != "ArrowRight") ||
@@ -33,10 +38,26 @@ window.addEventListener("keydown", (e) => {
   }
 });
 
+window.addEventListener("resize", (e) => {
+  if (isGameRunning) blocks[`${food.x}-${food.y}`].classList.remove("food");
+  rows = Math.floor(board.clientHeight / cellSize);
+  cols = Math.floor(board.clientWidth / cellSize);
+  board.innerHTML = "";
+  blocks = [];
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      const div = document.createElement("div");
+      div.classList.add("box");
+      board.append(div);
+      blocks[`${row}-${col}`] = div;
+    }
+  }
+  if (isGameRunning) loadFood();
+});
+
 for (let row = 0; row < rows; row++) {
   for (let col = 0; col < cols; col++) {
     const div = document.createElement("div");
-    // div.textContent = `${row}-${col}`;
     div.classList.add("box");
     board.append(div);
     blocks[`${row}-${col}`] = div;
@@ -49,31 +70,44 @@ function loadFood() {
       x: Math.floor(Math.random() * rows),
       y: Math.floor(Math.random() * cols),
     };
-    blocks[`${food.x}-${food.y}`].classList.add("food");
-    foodx = food.x;
-    foody = food.y;
   } while (snake.some((seg) => seg.x == food.x && seg.y == food.y));
+
+  blocks[`${food.x}-${food.y}`].classList.add("food");
 }
 
 function startGame() {
+  if (isGameRunning === true) return;
+  isGameRunning = true;
   snake = [
     {
-      x: 1,
-      y: 5,
+      x: 0,
+      y: 0,
     },
     {
       x: 1,
-      y: 4,
+      y: 0,
     },
   ];
   model.style.display = "none";
   scorevalue = 0;
   score.textContent = 0;
 
-  loadFood();
   intervalId = setInterval(() => {
     rendor();
   }, 400);
+
+  loadFood();
+
+  timeIntervalId = setInterval(() => {
+    if (sec > 59) {
+      sec = 0;
+      min++;
+    } else {
+      sec++;
+    }
+
+    timer.textContent = `${min}-${sec}`;
+  }, 1000);
 }
 
 function hideModal() {
@@ -84,13 +118,19 @@ function hideModal() {
 
 function gameOver() {
   clearInterval(intervalId);
+  clearInterval(timeIntervalId);
   snake.forEach((seg) => {
     blocks[`${seg.x}-${seg.y}`].classList.remove("fill");
-    modelScore.textContent = scorevalue;
   });
-  scorevalue = 0;
-  blocks[`${foodx}-${foody}`].classList.remove("food");
+  blocks[`${food.x}-${food.y}`].classList.remove("food");
   model.style.display = "flex";
+  modelScore.textContent = scorevalue;
+  scorevalue = 0;
+  direction = "ArrowDown";
+  isGameRunning = false;
+  min = 0;
+  sec = 0;
+  timer.textContent = `${min}-${sec}`;
 }
 
 function rendor() {
@@ -118,12 +158,17 @@ function rendor() {
   if (head.x == food.x && head.y == food.y) {
     scorevalue++;
     score.textContent = scorevalue;
-    if (highScoreValue <= scorevalue) {
+    if (highScoreValue < scorevalue) {
       highScoreValue = scorevalue;
       highScore.textContent = highScoreValue;
+      localStorage.setItem("highScore", highScoreValue);
     }
     blocks[`${food.x}-${food.y}`].classList.remove("food");
     snake.unshift(head);
+    if (snake.length == rows * cols) {
+      gameOver();
+      return;
+    }
     loadFood();
   } else {
     snake.pop();
